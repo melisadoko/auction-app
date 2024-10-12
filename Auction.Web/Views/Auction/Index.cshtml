@@ -1,0 +1,63 @@
+﻿@using System.Security.Claims
+@* Define the model *@
+@model IEnumerable<AuctionViewModel>
+
+@* Define the ViewData *@
+@{
+    ViewData["Title"] = "List of Auctions";
+}
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success">
+                @TempData["SuccessMessage"]
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger">
+                @TempData["ErrorMessage"]
+            </div>
+        }
+        <table class="table">
+            <thead>
+                <tr class="text-center">
+                    <th>@Html.DisplayNameFor(model => model.Title)</th>
+                    <th>@Html.DisplayNameFor(model => model.Description)</th>
+                    <th>@Html.DisplayNameFor(model => model.CreatedUser)</th>
+                    <th>@Html.DisplayNameFor(model => model.CurrentPrice)</th>
+                    <th>Time Remaining</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    var timeRemaining = item.EndDate - DateTime.Now;
+
+                    <tr class="text-center">
+                        <td class="align-middle"><a asp-action="Detail" asp-route-id="@item.Id">@Html.DisplayFor(modelItem => item.Title)</a></td>
+                        <td class="align-middle">@Html.DisplayFor(modelItem => item.Description)</td>
+                        <td class="align-middle">@Html.DisplayFor(modelIem => item.CreatedUser)</td>
+                        <td class="align-middle">@Html.DisplayFor(modelItem => item.CurrentPrice)</td>
+                        <td class="align-middle">
+                            @($"{timeRemaining.Days}d {timeRemaining.Hours}h {timeRemaining.Minutes}m")
+                        </td>
+                        @if (User.Identity.IsAuthenticated && item.UserId == User.FindFirstValue(ClaimTypes.NameIdentifier))
+                        {
+                            <td class="align-middle">
+                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Are you sure you want to delete this auction?');">
+                                    <button type="submit" class="btn btn-danger btn-sm text-white">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+                                </form>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

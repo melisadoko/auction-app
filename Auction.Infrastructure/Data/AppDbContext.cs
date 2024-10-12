@@ -15,21 +15,29 @@ namespace Auction.Infrastructure.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-        //public DbSet<AuctionItem> AuctionItems { get; set; }
-        //public DbSet<Bid> Bids { get; set; }
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
 
-        //protected override void OnModelCreating(ModelBuilder modelBuilder)
-        //{
-        //    base.OnModelCreating(modelBuilder); // Call base method for Identity
+            modelBuilder.Entity<Bid>()
+                .HasOne(b => b.Auction)
+                .WithMany(a => a.Bids)
+                .HasForeignKey(b => b.AuctionId)
+                .OnDelete(DeleteBehavior.Cascade); 
 
-        //    // Configure other entities here (if needed)
-        //    modelBuilder.Entity<AuctionItem>()
-        //        .HasOne(a => a.Owner)
-        //    .WithMany()
-        //        .HasForeignKey(a => a.OwnerId);
+            modelBuilder.Entity<AuctionItem>()
+                .HasOne(a => a.CreatedUser)
+                .WithMany() 
+                .HasForeignKey(a => a.UserCreatedId)
+                .OnDelete(DeleteBehavior.Restrict); 
 
-        //    modelBuilder.Entity<Bid>()
-        //        .HasOne<User>().WithMany().HasForeignKey(b => b.BidderId);
-        //}
+            modelBuilder.Entity<Bid>()
+                .HasOne(b => b.User)
+                .WithMany() 
+                .HasForeignKey(b => b.UserId)
+                .OnDelete(DeleteBehavior.Restrict); 
+        }
+        public DbSet<AuctionItem> AuctionItems { get; set; }
+        public DbSet<Bid> Bids { get; set; }
     }
 }

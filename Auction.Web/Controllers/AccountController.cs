@@ -29,7 +29,7 @@ namespace Auction.Web.Controllers
                 if (result.Succeeded)
                 {
                     await _userService.LoginUserAsync(model.Username, model.Password);
-                    return RedirectToAction("Index", "Home");
+                    return RedirectToAction("Index", "Auction");
                 }
                 foreach (var error in result.Errors)
                 {
@@ -51,7 +51,7 @@ namespace Auction.Web.Controllers
                 bool isLoggedIn = await _userService.LoginUserAsync(model.Username, model.Password);
                 if (isLoggedIn)
                 {
-                    return RedirectToAction("Index", "Home");
+                    return RedirectToAction("Index", "Auction");
                 }
                 ModelState.AddModelError(string.Empty, "Invalid login attempt.");
             }
@@ -62,7 +62,7 @@ namespace Auction.Web.Controllers
         public async Task<IActionResult> Logout()
         {
             await _userService.LogoutUserAsync();
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Login", "Account");
         }
     }
 }

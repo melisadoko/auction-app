@@ -13,3 +13,4 @@ namespace Auction.Core.Entities
         public string LastName {get; set; }
     }
 }
+    

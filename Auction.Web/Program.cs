@@ -6,6 +6,10 @@ using Auction.Core.Entities;
 using Microsoft.AspNetCore.Identity;
 using Auction.Core.Interfaces;
 using Auction.Infrastructure.Services;
+using Auction.Infrastructure.IRepositories;
+using Auction.Infrastructure.Repositories;
+using Auction.Web.Services;
+using Auction.Web.IServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,8 +19,15 @@ builder.Services.AddIdentity<User, IdentityRole>()
     .AddDefaultTokenProviders();
 
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAuctionRepository, AuctionRepository>();
+builder.Services.AddScoped<IBidRepository, BidRepository>();
+builder.Services.AddScoped<IAuctionService, AuctionService>();
+
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
 
 var app = builder.Build();
 
