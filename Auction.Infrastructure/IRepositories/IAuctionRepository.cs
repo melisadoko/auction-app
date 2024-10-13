@@ -12,5 +12,6 @@ namespace Auction.Infrastructure.IRepositories
         Task<AuctionItem> GetAuctionByIdAsync(int id);
         Task AddAuctionAsync(AuctionItem auction);
         Task DeleteAuctionAsync(AuctionItem auction);
+        Task UpdateAuctionCurrentPriceAsync(int id, decimal newPrice);
     }
 }

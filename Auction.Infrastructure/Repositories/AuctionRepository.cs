@@ -40,5 +40,15 @@ namespace Auction.Infrastructure.Repositories
             var auction = await _context.AuctionItems.Include(a => a.Bids).Include(p => p.CreatedUser).FirstOrDefaultAsync(a => a.Id == id);
             return auction;
         }
+
+        public async Task UpdateAuctionCurrentPriceAsync(int id, decimal newPrice)
+        {
+            var auction = await _context.AuctionItems.FirstOrDefaultAsync(a => a.Id == id);
+            if (auction != null)
+            {
+                auction.CurrentPrice = newPrice;
+                await _context.SaveChangesAsync();  
+            }
+        }
     }
 }

@@ -1,8 +1,10 @@
 ﻿using Auction.Web.IServices;
 using Auction.Web.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Auction.Web.Controllers
 {
@@ -49,9 +51,16 @@ namespace Auction.Web.Controllers
             }
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            await _auctionService.AddAuctionAsync(model, userId);
-
-            TempData["SuccessMessage"] = "Auction created successfully.";
+            try
+            {
+                await _auctionService.AddAuctionAsync(model, userId);
+                TempData["SuccessMessage"] = "Auction created successfully.";
+            }
+            catch(Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                return View(model);
+            }
             return RedirectToAction("Index");
         }
 
@@ -65,7 +74,12 @@ namespace Auction.Web.Controllers
                     return NotFound();
                 }
 
-                return View(auction);
+                var viewModel = new AuctionDetailsViewModel
+                {
+                    Auction = auction,  
+                    Bid = new BidViewModel { AuctionId = id }  
+                };
+                return View(viewModel);
             }
             catch (Exception ex)
             {
@@ -74,6 +88,26 @@ namespace Auction.Web.Controllers
             return RedirectToAction("Index");
         }
 
+        [HttpPost]
+        public async Task<IActionResult> PlaceBid(AuctionDetailsViewModel viewModel)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View("Detail", viewModel);
+            }
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
+            try
+            {
+                await _auctionService.PlaceBidAsync(viewModel.Bid, userId);
+                TempData["SuccessMessage"] = "Bid placed successfully.";
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                return View("Detail", viewModel);
+            }
+            return RedirectToAction("Index");
+        }
     }
 }

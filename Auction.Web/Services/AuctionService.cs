@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
 using System.Security.Claims;
+using System.Security.Cryptography;
 
 namespace Auction.Web.Services
 {
@@ -13,12 +14,14 @@ namespace Auction.Web.Services
     {
         private readonly IAuctionRepository _auctionRepository;
         private readonly IBidRepository _bidRepository;
+        private readonly UserManager<User> _userManager;
         private readonly ILogger<AuctionService> _logger;
 
-        public AuctionService(IAuctionRepository auctionRepository, IBidRepository bidRepository, ILogger<AuctionService> logger)
+        public AuctionService(IAuctionRepository auctionRepository, IBidRepository bidRepository, UserManager<User> userManager, ILogger<AuctionService> logger)
         {
             _auctionRepository = auctionRepository;
             _bidRepository = bidRepository;
+            _userManager = userManager;
             _logger = logger;
         }
         public async Task DeleteAuctionAsync(int auctionId, string userId)
@@ -89,15 +92,47 @@ namespace Auction.Web.Services
                 StartingPrice = auction.StartingPrice,
                 CurrentPrice = highestBid?.Amount ?? 0,
                 EndDate = auction.EndDate,
-                UserId = auction.UserCreatedId, 
-                CreatedUser = auction.CreatedUser.UserName, 
-                HighestBidder = highestBid?.User.UserName ?? "",                
+                UserId = auction.UserCreatedId,
+                CreatedUser = auction.CreatedUser.UserName,
+                HighestBidder = highestBid?.User.UserName ?? "",
             };
         }
 
-        public Task PlaceBidAsync(BidViewModel bidModel, string userId)
+        public async Task PlaceBidAsync(BidViewModel bidModel, string userId)
         {
-            throw new NotImplementedException();
+            var auction = await _auctionRepository.GetAuctionByIdAsync(bidModel.AuctionId);
+            if (auction == null || auction.IsClosed)
+            {
+                _logger.LogWarning("Auction with ID {AuctionId} not found.", bidModel.AuctionId);
+                throw new InvalidOperationException("Auction not found or already closed.");
+            }
+            if (bidModel.Amount <= auction.CurrentPrice)
+            {
+                throw new Exception("Bid amount must be higher than the current price.");
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null || user.WalletBalance < bidModel.Amount)
+            {
+                throw new Exception("Insufficient balance to place this bid.");
+            }
+            var bid = new Bid
+            {
+                AuctionId = bidModel.AuctionId,
+                UserId = userId,
+                Amount = bidModel.Amount,
+            };
+            try
+            {
+                await _bidRepository.AddBidAsync(bid);
+                await _auctionRepository.UpdateAuctionCurrentPriceAsync(bidModel.AuctionId, bidModel.Amount);
+                _logger.LogInformation($"Bid placed by {userId} for auction {auction.Id}, new price: {bidModel.Amount}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while placing a bid for auction ID {AuctionId}.", bidModel.AuctionId);
+                throw new Exception("An error occurred while placing your bid. Please try again later.");
+            }
         }
         public async Task AddAuctionAsync(AuctionViewModel auctionViewModel, string userId)
         {
@@ -107,10 +142,10 @@ namespace Auction.Web.Services
                 Title = auctionViewModel.Title,
                 Description = auctionViewModel.Description,
                 StartingPrice = auctionViewModel.StartingPrice,
-                CurrentPrice = auctionViewModel.StartingPrice, 
+                CurrentPrice = auctionViewModel.StartingPrice,
                 EndDate = auctionViewModel.EndDate,
-                IsClosed = false, 
-                UserCreatedId = userId 
+                IsClosed = false,
+                UserCreatedId = userId
             };
 
             await _auctionRepository.AddAuctionAsync(auction);
