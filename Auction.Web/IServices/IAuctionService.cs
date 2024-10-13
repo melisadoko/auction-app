@@ -9,5 +9,6 @@ namespace Auction.Web.IServices
         Task PlaceBidAsync(BidViewModel bidModel, string userId);
         Task DeleteAuctionAsync(int auctionId, string userId);
         Task AddAuctionAsync(AuctionViewModel auctionViewModel, string userId);
+        Task CheckEndAuctionsAsync();
     }
 }

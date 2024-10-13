@@ -10,6 +10,7 @@ using Auction.Infrastructure.IRepositories;
 using Auction.Infrastructure.Repositories;
 using Auction.Web.Services;
 using Auction.Web.IServices;
+using Auction.Web.BackgroundService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +23,8 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuctionRepository, AuctionRepository>();
 builder.Services.AddScoped<IBidRepository, BidRepository>();
 builder.Services.AddScoped<IAuctionService, AuctionService>();
+builder.Services.AddScoped<AuctionEndService>();
+builder.Services.AddHostedService<AuctionEndService>();
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();

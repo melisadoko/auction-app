@@ -41,14 +41,22 @@ namespace Auction.Infrastructure.Repositories
             return auction;
         }
 
-        public async Task UpdateAuctionCurrentPriceAsync(int id, decimal newPrice)
+        public async Task UpdateAuctionAsync(int id, AuctionItem auction)
         {
-            var auction = await _context.AuctionItems.FirstOrDefaultAsync(a => a.Id == id);
-            if (auction != null)
+            var auctionDb = await _context.AuctionItems.FirstOrDefaultAsync(a => a.Id == id);
+            if (auctionDb != null)
             {
-                auction.CurrentPrice = newPrice;
-                await _context.SaveChangesAsync();  
+                _context.Entry(auction).State = EntityState.Modified;
+                //auction.Id = auctionDb.Id;  
+                await _context.SaveChangesAsync();
             }
+        }
+
+        public async Task<List<AuctionItem>> GetEndedAuctionsAsync()
+        {
+            return await _context.AuctionItems
+                .Where(a => a.EndDate <= DateTime.Now && !a.IsClosed)
+                .ToListAsync();
         }
     }
 }

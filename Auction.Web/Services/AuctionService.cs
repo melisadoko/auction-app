@@ -125,7 +125,8 @@ namespace Auction.Web.Services
             try
             {
                 await _bidRepository.AddBidAsync(bid);
-                await _auctionRepository.UpdateAuctionCurrentPriceAsync(bidModel.AuctionId, bidModel.Amount);
+                auction.CurrentPrice = bid.Amount;
+                await _auctionRepository.UpdateAuctionAsync(bidModel.AuctionId, auction);
                 _logger.LogInformation($"Bid placed by {userId} for auction {auction.Id}, new price: {bidModel.Amount}");
             }
             catch (Exception ex)
@@ -150,6 +151,46 @@ namespace Auction.Web.Services
 
             await _auctionRepository.AddAuctionAsync(auction);
             _logger.LogInformation("New auction with ID {AuctionId} created by user ID {UserId}.", auction.Id, userId);
+        }
+
+        public async Task CheckEndAuctionsAsync()
+        {
+            var endedAuctions = await _auctionRepository.GetEndedAuctionsAsync();
+
+            foreach (var auction in endedAuctions)
+            {
+                try
+                {
+                    var highestBid = await _bidRepository.GetHighestBidForAuctionAsync(auction.Id);
+                    if (highestBid != null)
+                    {
+                        var seller = await _userManager.FindByIdAsync(auction.UserCreatedId);
+                        var highestBidder = await _userManager.FindByIdAsync(highestBid.UserId);
+                        if (highestBidder.WalletBalance >= highestBid.Amount)
+                        {
+                            seller.WalletBalance += highestBid.Amount;
+                            highestBidder.WalletBalance -= highestBid.Amount;
+
+                            await _userManager.UpdateAsync(seller);
+                            await _userManager.UpdateAsync(highestBidder);
+
+                            _logger.LogInformation("Successfully updated balances: User {SellerId} received {Amount} and User {BidderId} has {NewBalance} remaining.", seller.Id, highestBid.Amount, highestBidder.Id, highestBidder.WalletBalance);
+                            auction.IsClosed = true;
+                            await _auctionRepository.UpdateAuctionAsync(auction.Id, auction);
+                            _logger.LogInformation("Successfully closed auction: {AuctionId} ", auction.Id);
+
+                        }
+                        else
+                        {
+                           _logger.LogWarning("User {UserId} does not have enough balance to complete the auction {AuctionId}.", highestBid.UserId, auction.Id);
+                        }
+                    }
+                }
+                catch (Exception ex) 
+                {
+                    _logger.LogError(ex, "An error occurred while processing auction {AuctionId}.", auction.Id);
+                }
+            }
         }
 
     }
