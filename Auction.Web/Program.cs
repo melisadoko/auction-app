@@ -11,8 +11,19 @@ using Auction.Infrastructure.Repositories;
 using Auction.Web.Services;
 using Auction.Web.IServices;
 using Auction.Web.BackgroundService;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+//Log.Logger = new LoggerConfiguration()
+//    .WriteTo.File("logs/log.txt", rollingInterval: RollingInterval.Day)
+//    .CreateLogger();
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .CreateLogger();
+
+builder.Host.UseSerilog(); // Use Serilog for logging
 
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnectionString")));//DbContext is the translator that maps Model with SqlData
 builder.Services.AddIdentity<User, IdentityRole>()
@@ -29,8 +40,8 @@ builder.Services.AddHostedService<AuctionEndService>();
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
+//builder.Logging.ClearProviders();
+//builder.Logging.AddConsole();
 
 var app = builder.Build();
 
